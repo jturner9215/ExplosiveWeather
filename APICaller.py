@@ -22,6 +22,7 @@ for val in r["data"]["values"]:
     print(val, ": ", r["data"]["values"][val])
 
 
+
 """
 values returned in json format from the API
 
