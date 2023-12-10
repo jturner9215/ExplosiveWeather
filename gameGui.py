@@ -8,6 +8,7 @@ import APICaller as api
 
 
 
+
 #-----theme browser-----
 
 def layoutTheme():
@@ -24,43 +25,57 @@ def layoutTheme():
 
 def layoutCity():
 
-    layoutZ = [[sg.Text("Enter your city:")],
+    layoutZ = [[sg.Text("Enter your city or zipcode:")],
                [sg.Input(key='-IN-', enable_events=True)],
                [sg.Button("Enter")]]
     return sg.Window('City', layoutZ, finalize=True)
 
-city = "indianapolis"
+location = "indianapolis"
 
 
-#temperature, humidity, precipitationProbability, dewPoint, windSpeed
-data = api.r
+#temperature, humidity, precipitationProbability, dewPoint, windSpeed#####################################################################
+"""data = api.r
 temp = ''
 hum = ''
 rain = ''
 dew = ''
-wind = ''
+wind = ''"""
 
-for val in data["data"]["values"]:
-    if val == 'dewPoint':
-        dew = data["data"]["values"][val]
-    elif val == 'humidity':
-        hum = data["data"]["values"][val]
-    elif val == 'precipitationProbablity':
-        rain = data["data"]["values"][val]
-    elif val == 'temperature':
-        temp = data["data"]["values"][val]
-    elif val == 'windSpeed':
-        wind = data["data"]["values"][val]
-    #print(val, ": ", data["data"]["values"][val])
+#humidity0, precipitationProbability1, pressureSurfaceLevel2, temperature3, temperatureApparent4, weatherCode5, windSpeed6
 
-layoutWeather = [
-    [sg.Text("Temperature: " + str(temp))],
-    [sg.Text("Humidity: "+ str(hum))],
-    [sg.Text("Rain chance: "+ str(rain))],
-    [sg.Text("Dew point: "+ str(dew))],
-    [sg.Text("Wind speed: "+ str(wind))]
 
-    ]
+#doing it like this to hopefully cut down on calls to the api
+"""def cityData(function):
+    
+    data = function
+    return data"""
+
+
+#data = api.API_Call(location, "imperial")
+
+ 
+pressure = ""
+    
+hum = ""
+    
+rain = ""
+
+temp = ""
+    
+wind = ""
+    
+
+def layoutWeather():
+
+    layoutWea = [#################################################################################################################
+        [sg.Text("Temperature: ", key='-tempd-')],
+        [sg.Text("Humidity: ", key='-humd-')],
+        [sg.Text("Rain chance: ", key='-raind-')],
+        [sg.Text("Pressure level: ", key='-pressd-')],
+        [sg.Text("Wind speed: ", key='-windd-')]
+
+        ]
+    return sg.Window('Weather', layoutWea, resizable=True, finalize=True)
 
 
 #menu bar for main window
@@ -93,36 +108,37 @@ while True:
 
     if event == 'Easy':
         boardObj = MSLib.MineSweeperBoard("Easy")      #building the object for the board class
-        
+        revealedBoard = MSLib.Board_Revealed_Preset_easy
+        gameBoard = boardObj.board_Array
         break
 
     if event == 'Hard':
         boardObj = MSLib.MineSweeperBoard("Hard")
         row = 8
         column = 8
+        revealedBoard = MSLib.Board_Revealed_Preset_hard
+        gameBoard = boardObj.board_Array
         break
 
 
 window.close()
 
 #copying game board to secondary array to track what has been revealed
-revealedBoard = [row[:] for row in boardObj.board_Array]
+#revealedBoard = [row[:] for row in boardObj.board_Array]
+#revealedBoard = boardObj.board_Array.copy()
 
 #counting how many bombs are in play
 bombCount = 0
 
+flagOn = False
 
 
 for j in range(column):
     for i in range(row):
-        if boardObj.board_Array[i][j] == -1:
+        if gameBoard[i][j] == -1:
             bombCount += 1
 
 
-#secondary board to keep track of revealed spaces
-for j in range(column):
-    for i in range(row):
-        revealedBoard[i][j] = 0
 
 
 
@@ -132,7 +148,7 @@ theme = 'BluePurple'
 def layoutMine():
     layout = [
         [sg.Menu(menu_def, )],
-        [sg.Text("Score: " + str(boardObj.GameData.score_get())), sg.Text("Bombs: " + str(bombCount))],
+        [sg.Text("Score: " + str(boardObj.GameData.score_get()), key = 'xxx'), sg.Text("Bombs: " + str(bombCount)), sg.Button('Flag')],
         [[sg.Button('', size=(4, 2), key=(i, j), pad=(0,0)) for j in range(row)] for i in range(column)]     
         ]
     
@@ -152,8 +168,6 @@ def keepCount():
 #----------------------------main game loop-------------------------------
 
 
-
-
 window = layoutMine() #sg.Window('Minesweeper', layoutMine)
 
 boardObj.Win_Loss_Flag = 0
@@ -171,9 +185,37 @@ while True:
             break
         window.close()
 
-        window4 = sg.Window('test', layoutWeather)
+
+        data = api.API_Call(location, "imperial")
+        pressure = data[2]  
+        hum = data[0]               
+        rain = data[1]
+        temp = data[3]
+        wind = data[6]
+
+        #print(data)
+        #print(str(hum) + "test")
+
+        
+        window4 = layoutWeather()
+        window4['-tempd-'].update("Temperature: " + str(temp))
+        window4['-humd-'].update("Humidity: "+ str(hum))
+        window4['-raind-'].update("Rain chance: "+ str(rain))
+        window4['-pressd-'].update("Pressure level: "+ str(pressure))
+        window4['-windd-'].update("Wind speed: "+ str(wind))
+        
+
         while True:
+            
             event, values = window4.read()
+
+            
+
+            """window4['-tempd-'].update("Temperature: " + str(temp))
+            window4['-humd-'].update("Humidity: "+ str(hum))
+            window4['-raind-'].update("Rain chance: "+ str(rain))
+            window4['-pressd-'].update("Pressure level: "+ str(pressure))
+            window4['-windd-'].update("Wind speed: "+ str(wind))"""
             if event in (sg.WIN_CLOSED, 'Exit', 'Enter'):
                   break
         window4.close()
@@ -186,22 +228,38 @@ while True:
         if event != "View themes":
             if event != "Change city":
                 if event != "How to play":
-                    
-                    window[event].update(boardObj.board_Array[event[0]][event[1]], button_color=('white','black')) 
-                    #to visually update the playing board when user clicks 
+                    if event != 'Flag':
 
-                    if boardObj.board_Array[event[0]][event[1]] == -1:         
-                        #breaks the loop if user clicks a bomb and shuts window
-                        boardObj.Win_Loss_Flag = -1
-                        sg.popup("You lost :(",
-                                "Score: " + str(boardObj.GameData.score_get()))
-                        break 
+                        if flagOn == False:
 
-                    if boardObj.board_Array[event[0]][event[1]] != -1:
-                        revealedBoard[event[0]][event[1]] = 1
-    
-                        if (keepCount() + bombCount) == (row * column):
-                            boardObj.Win_Loss_Flag = 1
+                        
+                            window[event].update(gameBoard[event[0]][event[1]], button_color=('white','black')) 
+                            #to visually update the playing board when user clicks 
+
+                            if gameBoard[event[0]][event[1]] == -1:         
+                                #breaks the loop if user clicks a bomb and shuts window
+                                boardObj.Win_Loss_Flag = -1
+                                sg.popup("You lost :(",
+                                        "Score: " + str(boardObj.GameData.score_get()))
+                                break 
+
+                            if gameBoard[event[0]][event[1]] != -1:
+
+                                if revealedBoard[event[0]][event[1]] != 1:
+
+                                    revealedBoard[event[0]][event[1]] = 1
+                                    boardObj.GameData.Score_Manual_Update(5)
+                                    window['xxx'].update('Score: ' + str(boardObj.GameData.score_get()))
+            
+                                if (keepCount() + bombCount) == (row * column):
+                                    boardObj.Win_Loss_Flag = 1
+
+                            
+                            
+
+                        if flagOn == True:
+
+                            window[event].update('X', button_color=('black','white'))
 
                         
                         
@@ -230,15 +288,31 @@ while True:
             event, values = window3.read()
             if event in (sg.WIN_CLOSED, 'Exit', 'Enter'):
                   break
-            city = values
+            location = values
+            """data = api.API_Call(location, "imperial")
+            pressure = data[2]  
+            hum = data[0]               
+            rain = data[1]
+            temp = data[3]
+            wind = data[6]"""
         #print(city)    
         window3.close()
 
-######################------------#######################temp, change values to reflect info box
+
     if event == "How to play":
         sg.Popup("To play minesweeper, you click a square.",
                  "The number that appears is how many bombs are touching that square!",
                  "But if you click a bomb, you lose! Try to avoid those spots!",
-                 "You win once all non-bombs are uncovered.")
+                 "You win once all non-bombs are uncovered and you click 'flag'.")
+        
+
+
+    if event == 'Flag':
+        if flagOn == False:
+            flagOn = True
+            window[event].update(button_color=('green'))
+        else:
+            flagOn = False
+            window[event].update(button_color=('#122e52'))
 
 
